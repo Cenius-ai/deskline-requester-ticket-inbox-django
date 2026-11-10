@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" role="img" aria-label="Deskline">
+  <rect width="24" height="24" rx="5" fill="#0b1418"/>
+  <g fill="none" stroke="#009494" stroke-width="1.9" stroke-linejoin="round">
+    <path d="M4.5 9.2a2.9 2.9 0 0 0 0 5.6v2.4h15v-2.4a2.9 2.9 0 0 1 0-5.6V6.8h-15Z"/>
+    <path d="M12 7.6v8.8" stroke-dasharray="1.8 2.6"/>
+  </g>
+</svg>
