@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Page not found · Deskline{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+
+{% block content %}
+<main class="auth auth--single">
+  <div class="auth__card card card--float">
+    <p class="eyebrow">404</p>
+    <h1>That page isn’t here</h1>
+    <p class="lede">The ticket or page you were looking for doesn’t exist, or it belongs to someone else.</p>
+    <p class="auth__actions">
+      <a class="btn btn-primary" href="{% url 'root' %}">Back to Deskline</a>
+      <a class="btn btn-quiet" href="{% url 'sign_in' %}">Sign in</a>
+    </p>
+  </div>
+</main>
+{% endblock %}

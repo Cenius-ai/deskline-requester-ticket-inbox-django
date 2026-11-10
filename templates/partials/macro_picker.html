@@ -1,0 +1,24 @@
+<section class="panel" aria-labelledby="macros-title">
+  <header class="panel__head">
+    <h2 id="macros-title">Macros</h2>
+    <span class="panel__meta">canned reply + status</span>
+  </header>
+  <ul class="macro-list">
+    {% for macro in macros %}
+      <li class="macro">
+        <form method="post" action="{% url 'ticket_macro' ticket.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="macro_id" value="{{ macro.pk }}">
+          <div class="macro__text">
+            <span class="macro__name">{{ macro.name }}</span>
+            <span class="macro__meta">sets status to {{ macro.get_set_status_display }}</span>
+            <p class="macro__body">{{ macro.body|truncatewords:16 }}</p>
+          </div>
+          <button class="btn btn-secondary btn-sm" type="submit">Apply</button>
+        </form>
+      </li>
+    {% empty %}
+      <li class="empty-inline">No macros yet — run <code>python manage.py seed</code> to install the starter set.</li>
+    {% endfor %}
+  </ul>
+</section>

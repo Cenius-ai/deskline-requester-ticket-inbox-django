@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load static sla_tags %}
+
+{% block content %}
+<div class="app-shell">
+  <aside class="sidebar">
+    <a class="brand" href="{% url 'root' %}">
+      <svg class="brand__mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M3 9a3 3 0 0 0 0 6v3h18v-3a3 3 0 0 1 0-6V6H3Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+        <path d="M12 6.5v11" stroke="currentColor" stroke-width="1.7" stroke-dasharray="2 3"/>
+      </svg>
+      <span class="brand__text">
+        <span class="brand__name">Deskline</span>
+        <span class="brand__sub">Requester Ticket Inbox</span>
+      </span>
+    </a>
+
+    <nav class="nav" aria-label="Main">
+      {% if is_agent_user %}
+        <a class="nav__link{% if active_nav == 'inbox' %} is-active{% endif %}" href="{% url 'inbox' %}"{% if active_nav == 'inbox' %} aria-current="page"{% endif %}>Inbox</a>
+      {% else %}
+        <a class="nav__link{% if active_nav == 'portal' %} is-active{% endif %}" href="{% url 'portal' %}"{% if active_nav == 'portal' %} aria-current="page"{% endif %}>My tickets</a>
+        <a class="nav__link{% if active_nav == 'new' %} is-active{% endif %}" href="{% url 'portal_new' %}"{% if active_nav == 'new' %} aria-current="page"{% endif %}>New ticket</a>
+      {% endif %}
+    </nav>
+
+    <div class="sidebar__foot">
+      <div class="who">
+        <span class="avatar avatar--sm" aria-hidden="true">{{ request.user.get_username|initials }}</span>
+        <span class="who__text">
+          <strong class="who__name">{{ request.user.get_full_name|default:request.user.get_username }}</strong>
+          <span class="who__role">{{ current_role|capfirst }}</span>
+        </span>
+      </div>
+      <form method="post" action="{% url 'sign_out' %}">
+        {% csrf_token %}
+        <button class="btn btn-quiet btn--block" type="submit">Sign out</button>
+      </form>
+    </div>
+  </aside>
+
+  <main class="main" id="main">
+    {% include "partials/flash.html" %}
+    {% block page %}{% endblock %}
+    <footer class="page-foot">
+      <span>Deskline · self-hosted helpdesk</span>
+      <span>{{ sla_window_hours }}h default SLA window · times in UTC</span>
+    </footer>
+  </main>
+</div>
+{% endblock %}

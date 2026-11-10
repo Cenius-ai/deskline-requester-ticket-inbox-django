@@ -1,0 +1,151 @@
+{% extends "shell.html" %}
+{% load humanize sla_tags %}
+
+{% block title %}#{{ ticket.pk }} {{ ticket.subject }} · Deskline{% endblock %}
+
+{% block page %}
+<nav class="crumbs" aria-label="Breadcrumb">
+  {% if agent_view %}
+    <a href="{% url 'inbox' %}">Inbox</a>
+  {% else %}
+    <a href="{% url 'portal' %}">My tickets</a>
+  {% endif %}
+  <span class="crumbs__sep" aria-hidden="true">/</span>
+  <span aria-current="page">Ticket #{{ ticket.pk }}</span>
+</nav>
+
+<header class="ticket-head card card--raised">
+  <div class="ticket-head__main">
+    <p class="eyebrow">Ticket #{{ ticket.pk }} · opened {{ ticket.created_at|naturaltime }}</p>
+    <h1>{{ ticket.subject }}</h1>
+    <p class="ticket-head__meta">
+      <span>{{ ticket.requester_name }}</span>
+      {% if ticket.requester.email %}<span class="dot" aria-hidden="true">·</span><span>{{ ticket.requester.email }}</span>{% endif %}
+      <span class="dot" aria-hidden="true">·</span>
+      <span>{% if ticket.assignee %}Assigned to {{ ticket.assignee_name }}{% else %}Unassigned{% endif %}</span>
+    </p>
+  </div>
+  <div class="ticket-head__badges">
+    {% include "partials/status_badge.html" with ticket=ticket %}
+    {% include "partials/priority_badge.html" with ticket=ticket %}
+    {% sla_badge ticket %}
+  </div>
+</header>
+
+<div class="grid-12">
+  <section class="span-8 stack" aria-labelledby="thread-title">
+    <div class="panel">
+      <header class="panel__head">
+        <h2 id="thread-title">Conversation</h2>
+        <span class="panel__meta">{{ message_count }} repl{{ message_count|pluralize:"y,ies" }}</span>
+      </header>
+
+      <article class="original-request">
+        <header class="msg__head">
+          <span class="avatar" aria-hidden="true">{{ ticket.requester_name|initials }}</span>
+          <span class="msg__who">
+            <strong>{{ ticket.requester_name }}</strong>
+            <span class="tag tag--role">Requester</span>
+          </span>
+          <time datetime="{{ ticket.created_at|date:'c' }}">{{ ticket.created_at|naturaltime }}</time>
+        </header>
+        <div class="msg__body">{{ ticket.description|linebreaks }}</div>
+      </article>
+
+      <ol class="thread">
+        {% for message in thread %}
+          <li class="thread__item">
+            <span class="avatar" aria-hidden="true">{{ message.author_name|initials }}</span>
+            <article class="msg">
+              <header class="msg__head">
+                <span class="msg__who">
+                  <strong>{{ message.author_name }}</strong>
+                  <span class="tag tag--role">{{ message.author_role|capfirst }}</span>
+                </span>
+                <time datetime="{{ message.created_at|date:'c' }}">{{ message.created_at|naturaltime }}</time>
+              </header>
+              <div class="msg__body">{{ message.body|linebreaks }}</div>
+            </article>
+          </li>
+        {% empty %}
+          <li class="thread__empty">
+            No replies yet —
+            {% if agent_view %}send the first reply below or apply a macro.{% else %}an agent will reply here. You can add more detail below.{% endif %}
+          </li>
+        {% endfor %}
+      </ol>
+    </div>
+
+    <form class="panel" method="post" action="{% url 'ticket_reply' ticket.pk %}" novalidate>
+      {% csrf_token %}
+      <header class="panel__head">
+        <h2>{% if agent_view %}Reply to {{ ticket.requester_name }}{% else %}Add a reply{% endif %}</h2>
+      </header>
+      {% if reopens_on_reply %}
+        <p class="notice">This ticket is {{ ticket.get_status_display|lower }}. Replying reopens it as <strong>Open</strong>.</p>
+      {% endif %}
+      {% include "partials/field.html" with field=reply_form.body %}
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Send reply</button>
+        <span class="field__hint">The reply is stamped with your name and the current time.</span>
+      </div>
+    </form>
+  </section>
+
+  <aside class="span-4 stack">
+    {% if agent_view %}
+      <form class="panel" method="post" action="{% url 'ticket_update' ticket.pk %}" novalidate>
+        {% csrf_token %}
+        <header class="panel__head">
+          <h2>Triage</h2>
+          <span class="panel__meta">agent only</span>
+        </header>
+        {% include "partials/field.html" with field=update_form.status %}
+        {% include "partials/field.html" with field=update_form.priority %}
+        {% include "partials/field.html" with field=update_form.assignee %}
+        <div class="form-actions">
+          <button class="btn btn-primary" type="submit">Save changes</button>
+        </div>
+      </form>
+
+      {% include "partials/macro_picker.html" %}
+
+      <section class="panel panel--danger" aria-labelledby="danger-title">
+        <header class="panel__head">
+          <h2 id="danger-title">Danger zone</h2>
+        </header>
+        <p class="body-copy muted">Deleting removes this ticket and its {{ message_count }} repl{{ message_count|pluralize:"y,ies" }} for everyone. It cannot be undone.</p>
+        <a class="btn btn-quiet btn--block" href="{% url 'ticket_delete' ticket.pk %}">Delete ticket…</a>
+      </section>
+    {% else %}
+      <section class="panel" aria-labelledby="next-title">
+        <header class="panel__head">
+          <h2 id="next-title">What happens next</h2>
+        </header>
+        <p class="body-copy">
+          {% if ticket.assignee %}
+            <strong>{{ ticket.assignee_name }}</strong> owns this ticket and answers inside the {{ sla_window_hours }}-hour window.
+          {% else %}
+            This ticket is in the shared queue. The first available agent picks it up inside the {{ sla_window_hours }}-hour window.
+          {% endif %}
+        </p>
+        <p class="body-copy muted">Replies land in the same thread. If a resolved ticket needs more work, your reply reopens it automatically.</p>
+      </section>
+    {% endif %}
+
+    <section class="panel" aria-labelledby="facts-title">
+      <header class="panel__head">
+        <h2 id="facts-title">Ticket facts</h2>
+      </header>
+      <dl class="facts">
+        <div class="facts__row"><dt>Status</dt><dd>{% include "partials/status_badge.html" with ticket=ticket %}</dd></div>
+        <div class="facts__row"><dt>Priority</dt><dd>{% include "partials/priority_badge.html" with ticket=ticket %}</dd></div>
+        <div class="facts__row"><dt>Assignee</dt><dd>{% if ticket.assignee %}{{ ticket.assignee_name }}{% else %}<span class="muted">Unassigned</span>{% endif %}</dd></div>
+        <div class="facts__row"><dt>Requester</dt><dd>{{ ticket.requester_name }}</dd></div>
+        <div class="facts__row"><dt>SLA due</dt><dd>{{ ticket.sla_due_at|date:"j M Y, H:i" }} UTC</dd></div>
+        <div class="facts__row"><dt>Last update</dt><dd>{{ ticket.updated_at|naturaltime }}</dd></div>
+      </dl>
+    </section>
+  </aside>
+</div>
+{% endblock %}

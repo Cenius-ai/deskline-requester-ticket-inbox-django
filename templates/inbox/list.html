@@ -1,0 +1,164 @@
+{% extends "shell.html" %}
+{% load sla_tags %}
+
+{% block title %}Inbox · Deskline{% endblock %}
+
+{% block page %}
+<header class="page-head">
+  <div class="page-head__text">
+    <p class="eyebrow">Agent inbox</p>
+    <h1>Ticket queue</h1>
+    <p class="lede">Every open request in one queue — sorted by status, then priority, then the SLA clock.</p>
+  </div>
+  <div class="page-head__side">
+    <span class="chip">SLA window · {{ sla_window_hours }}h</span>
+    <span class="chip chip--muted">Due soon under {{ sla_due_soon_hours }}h</span>
+  </div>
+</header>
+
+<section class="kpi-strip" aria-label="Queue summary">
+  <div class="kpi">
+    <span class="kpi__label">Open</span>
+    <span class="kpi__value">{{ summary.open }}</span>
+    <span class="kpi__meta">waiting on an agent</span>
+  </div>
+  <div class="kpi">
+    <span class="kpi__label">Pending</span>
+    <span class="kpi__value">{{ summary.pending }}</span>
+    <span class="kpi__meta">waiting on the requester</span>
+  </div>
+  <div class="kpi kpi--alert">
+    <span class="kpi__label">Overdue</span>
+    <span class="kpi__value">{{ summary.overdue }}</span>
+    <span class="kpi__meta">past the SLA clock</span>
+  </div>
+  <div class="kpi">
+    <span class="kpi__label">Due soon</span>
+    <span class="kpi__value">{{ summary.due_soon }}</span>
+    <span class="kpi__meta">inside {{ sla_due_soon_hours }} hours</span>
+  </div>
+  <div class="kpi">
+    <span class="kpi__label">Unassigned</span>
+    <span class="kpi__value">{{ summary.unassigned }}</span>
+    <span class="kpi__meta">no owner yet</span>
+  </div>
+</section>
+
+<div class="grid-12">
+  <section class="span-12 panel" aria-labelledby="queue-title">
+    <header class="panel__head">
+      <h2 id="queue-title">Queue</h2>
+      <span class="panel__meta">{{ result_count }} ticket{{ result_count|pluralize }}</span>
+    </header>
+
+    <div class="toolbar">
+      <nav class="tabs" aria-label="Filter by status">
+        {% for value, label in status_tabs %}
+          <a class="tab{% if active_status == value %} is-active{% endif %}"
+             href="{% url 'inbox' %}?status={{ value }}{% if query %}&amp;q={{ query|urlencode }}{% endif %}"
+             {% if active_status == value %}aria-current="page"{% endif %}>{{ label }}</a>
+        {% endfor %}
+      </nav>
+
+      <form class="search" role="search" method="get" action="{% url 'inbox' %}">
+        {% if active_status != 'all' %}<input type="hidden" name="status" value="{{ active_status }}">{% endif %}
+        <label class="sr-only" for="q">Search tickets by subject or requester</label>
+        <input id="q" name="q" type="search" value="{{ query }}" placeholder="Subject or requester">
+        <button class="btn btn-secondary btn-sm" type="submit">Search</button>
+        {% if filters_active %}
+          <a class="link-quiet" href="{% url 'inbox' %}">Clear</a>
+        {% endif %}
+      </form>
+    </div>
+
+    {% if tickets %}
+      <div class="table-wrap">
+        <table class="table">
+          <caption class="sr-only">Tickets in the queue</caption>
+          <thead>
+            <tr>
+              <th scope="col">Ticket</th>
+              <th scope="col">Requester</th>
+              <th scope="col">Priority</th>
+              <th scope="col">Status</th>
+              <th scope="col">Assignee</th>
+              <th scope="col">SLA</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ticket in tickets %}
+              <tr>
+                <td data-label="Ticket">
+                  <a class="row-title" href="{% url 'ticket_detail' ticket.pk %}">{{ ticket.subject }}</a>
+                  <span class="row-sub">#{{ ticket.pk }} · opened {{ ticket.created_at|timesince }} ago</span>
+                </td>
+                <td data-label="Requester">{{ ticket.requester_name }}</td>
+                <td data-label="Priority">{% include "partials/priority_badge.html" with ticket=ticket %}</td>
+                <td data-label="Status">{% include "partials/status_badge.html" with ticket=ticket %}</td>
+                <td data-label="Assignee">
+                  {% if ticket.assignee %}
+                    {{ ticket.assignee_name }}
+                  {% else %}
+                    <span class="muted">Unassigned</span>
+                  {% endif %}
+                </td>
+                <td data-label="SLA">{% sla_badge ticket %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state">
+        {% if filters_active %}
+          <h3>No tickets match these filters</h3>
+          <p>Nothing in <strong>{{ active_status|capfirst }}</strong>{% if query %} matches “{{ query }}”{% endif %} right now.</p>
+          <a class="btn btn-secondary" href="{% url 'inbox' %}">Clear filters</a>
+        {% else %}
+          <h3>The queue is empty</h3>
+          <p>No tickets have been raised yet. Sign in as the demo requester (<code>{{ demo_requester_username }}</code>) and raise one to see the full flow.</p>
+          <a class="btn btn-secondary" href="{% url 'sign_out' %}">Switch account</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </section>
+
+  <aside class="span-6 stack">
+    <section class="panel" aria-labelledby="watchlist-title">
+      <header class="panel__head">
+        <h2 id="watchlist-title">SLA watchlist</h2>
+        <span class="panel__meta">next 4 hours</span>
+      </header>
+      {% if watchlist %}
+        <ul class="watchlist">
+          {% for ticket in watchlist %}
+            <li class="watchlist__item">
+              <a class="watchlist__title" href="{% url 'ticket_detail' ticket.pk %}">{{ ticket.subject }}</a>
+              <span class="watchlist__meta">{{ ticket.requester_name }} · {% include "partials/priority_badge.html" with ticket=ticket %}</span>
+              {% sla_badge ticket %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="empty-inline">Nothing inside the four-hour window. Every open ticket still has room before its SLA.</p>
+      {% endif %}
+    </section>
+
+  </aside>
+
+  <aside class="span-6 stack">
+    <section class="panel" aria-labelledby="sla-how-title">
+      <header class="panel__head">
+        <h2 id="sla-how-title">How the clock works</h2>
+      </header>
+      <p class="body-copy">Deskline gives every ticket a <strong>{{ sla_window_hours }}-hour</strong> first-response window from the moment it is raised.</p>
+      <ul class="legend">
+        <li><span class="badge sla sla--on_track"><span class="sla__dot" aria-hidden="true"></span>On track</span> more than {{ sla_due_soon_hours }} hours left</li>
+        <li><span class="badge sla sla--due_soon"><span class="sla__dot" aria-hidden="true"></span>Due soon</span> inside {{ sla_due_soon_hours }} hours</li>
+        <li><span class="badge sla sla--overdue"><span class="sla__dot" aria-hidden="true"></span>Overdue</span> past the deadline</li>
+      </ul>
+      <p class="body-copy muted">Badges recount themselves every minute while the page stays open — no reload needed.</p>
+    </section>
+  </aside>
+</div>
+{% endblock %}

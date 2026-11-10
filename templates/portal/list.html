@@ -1,0 +1,99 @@
+{% extends "shell.html" %}
+{% load humanize sla_tags %}
+
+{% block title %}My tickets · Deskline{% endblock %}
+
+{% block page %}
+<header class="page-head">
+  <div class="page-head__text">
+    <p class="eyebrow">Requester portal</p>
+    <h1>Your tickets</h1>
+    <p class="lede">Everything you have raised with the Deskline support team, newest first.</p>
+  </div>
+  <div class="page-head__side">
+    <a class="btn btn-primary" href="{% url 'portal_new' %}">New ticket</a>
+  </div>
+</header>
+
+<section class="kpi-strip kpi-strip--4" aria-label="Your request summary">
+  <div class="kpi">
+    <span class="kpi__label">Total</span>
+    <span class="kpi__value">{{ summary.total }}</span>
+    <span class="kpi__meta">tickets raised</span>
+  </div>
+  <div class="kpi">
+    <span class="kpi__label">Open</span>
+    <span class="kpi__value">{{ summary.open }}</span>
+    <span class="kpi__meta">with the support team</span>
+  </div>
+  <div class="kpi">
+    <span class="kpi__label">Pending</span>
+    <span class="kpi__value">{{ summary.pending }}</span>
+    <span class="kpi__meta">waiting on you</span>
+  </div>
+  <div class="kpi kpi--alert">
+    <span class="kpi__label">Parked</span>
+    <span class="kpi__value">{{ summary.resolved }}</span>
+    <span class="kpi__meta">resolved tickets</span>
+  </div>
+</section>
+
+<div class="grid-12">
+  <section class="span-8 panel" aria-labelledby="mytickets-title">
+    <header class="panel__head">
+      <h2 id="mytickets-title">My tickets</h2>
+      <span class="panel__meta">{{ summary.total }} total</span>
+    </header>
+
+    {% if tickets %}
+      <ul class="ticket-list">
+        {% for ticket in tickets %}
+          <li class="ticket-row">
+            <div class="ticket-row__main">
+              <a class="row-title" href="{% url 'ticket_detail' ticket.pk %}">{{ ticket.subject }}</a>
+              <p class="row-sub">
+                #{{ ticket.pk }} · opened {{ ticket.created_at|naturaltime }} ·
+                {% if ticket.assignee %}with {{ ticket.assignee_name }}{% else %}in the shared queue{% endif %}
+              </p>
+            </div>
+            <div class="ticket-row__badges">
+              {% include "partials/status_badge.html" with ticket=ticket %}
+              {% include "partials/priority_badge.html" with ticket=ticket %}
+              {% sla_badge ticket %}
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="empty-state">
+        <h3>No tickets yet</h3>
+        <p>Raise your first ticket and an agent picks it up inside the {{ sla_window_hours }}-hour window.</p>
+        <a class="btn btn-primary" href="{% url 'portal_new' %}">New ticket</a>
+      </div>
+    {% endif %}
+  </section>
+
+  <aside class="span-4 stack">
+    <section class="panel" aria-labelledby="badge-help-title">
+      <header class="panel__head">
+        <h2 id="badge-help-title">Reading the badges</h2>
+      </header>
+      <ul class="legend">
+        <li><span class="badge status status--open">Open</span> an agent is working on it</li>
+        <li><span class="badge status status--pending">Pending</span> the team is waiting on you</li>
+        <li><span class="badge status status--resolved">Resolved</span> fixed — reply to reopen</li>
+        <li><span class="badge status status--closed">Closed</span> archived, reply still reopens</li>
+      </ul>
+      <p class="body-copy muted">The SLA badge counts the {{ sla_window_hours }}-hour first-response window. It updates every minute on its own.</p>
+    </section>
+
+    <section class="panel" aria-labelledby="portal-help-title">
+      <header class="panel__head">
+        <h2 id="portal-help-title">Need to add detail?</h2>
+      </header>
+      <p class="body-copy">Open any ticket and reply in the thread — new screenshots-free notes, steps you already tried, or the exact error text all help.</p>
+      <a class="btn btn-secondary" href="{% url 'portal_new' %}">Raise another ticket</a>
+    </section>
+  </aside>
+</div>
+{% endblock %}

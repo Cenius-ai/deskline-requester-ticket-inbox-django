@@ -1,0 +1,55 @@
+{% extends "shell.html" %}
+
+{% block title %}New ticket · Deskline{% endblock %}
+
+{% block page %}
+<nav class="crumbs" aria-label="Breadcrumb">
+  <a href="{% url 'portal' %}">My tickets</a>
+  <span class="crumbs__sep" aria-hidden="true">/</span>
+  <span aria-current="page">New ticket</span>
+</nav>
+
+<div class="grid-12">
+  <section class="span-8 panel" aria-labelledby="new-title">
+    <header class="panel__head">
+      <h1 id="new-title" class="panel__h1">Raise a ticket</h1>
+      <span class="panel__meta">{{ sla_window_hours }}h response window</span>
+    </header>
+
+    <form method="post" action="{% url 'portal_new' %}" novalidate>
+      {% csrf_token %}
+      {% include "partials/field.html" with field=form.subject %}
+      {% include "partials/field.html" with field=form.description %}
+      {% include "partials/field.html" with field=form.priority %}
+
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Send ticket</button>
+        <a class="btn btn-quiet" href="{% url 'portal' %}">Cancel</a>
+      </div>
+    </form>
+  </section>
+
+  <aside class="span-4 stack">
+    <section class="panel" aria-labelledby="tips-title">
+      <header class="panel__head">
+        <h2 id="tips-title">A ticket that gets solved faster</h2>
+      </header>
+      <ul class="tips">
+        <li>Name the screen or feature where it happened.</li>
+        <li>Paste the exact error text if you have one.</li>
+        <li>Say what you expected instead.</li>
+        <li>Mention if it blocks your work — set the priority accordingly.</li>
+      </ul>
+    </section>
+    <section class="panel">
+      <header class="panel__head"><h2>Priority guide</h2></header>
+      <dl class="facts">
+        <div class="facts__row"><dt>Urgent</dt><dd>Work is stopped for your whole team</dd></div>
+        <div class="facts__row"><dt>High</dt><dd>A core task is blocked</dd></div>
+        <div class="facts__row"><dt>Normal</dt><dd>A question or a workaround exists</dd></div>
+        <div class="facts__row"><dt>Low</dt><dd>Cosmetic or a nice-to-have</dd></div>
+      </dl>
+    </section>
+  </aside>
+</div>
+{% endblock %}

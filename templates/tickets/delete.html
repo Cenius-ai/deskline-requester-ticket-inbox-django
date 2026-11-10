@@ -1,0 +1,59 @@
+{% extends "shell.html" %}
+{% load humanize %}
+
+{% block title %}Delete ticket #{{ ticket.pk }} · Deskline{% endblock %}
+
+{% block page %}
+<nav class="crumbs" aria-label="Breadcrumb">
+  <a href="{% url 'inbox' %}">Inbox</a>
+  <span class="crumbs__sep" aria-hidden="true">/</span>
+  <a href="{% url 'ticket_detail' ticket.pk %}">Ticket #{{ ticket.pk }}</a>
+  <span class="crumbs__sep" aria-hidden="true">/</span>
+  <span aria-current="page">Delete</span>
+</nav>
+
+<header class="page-head">
+  <div class="page-head__text">
+    <p class="eyebrow">Agent action · permanent</p>
+    <h1>Delete ticket #{{ ticket.pk }}?</h1>
+    <p class="lede">This removes the ticket and its whole conversation. Nothing is archived and there is no undo.</p>
+  </div>
+</header>
+
+<div class="grid-12">
+  <section class="span-8 panel panel--danger" aria-labelledby="confirm-title">
+    <header class="panel__head">
+      <h2 id="confirm-title">{{ ticket.subject }}</h2>
+      <span class="panel__meta">raised {{ ticket.created_at|naturaltime }}</span>
+    </header>
+
+    <dl class="facts">
+      <div class="facts__row"><dt>Requester</dt><dd>{{ ticket.requester_name }}</dd></div>
+      <div class="facts__row"><dt>Status</dt><dd>{% include "partials/status_badge.html" with ticket=ticket %}</dd></div>
+      <div class="facts__row"><dt>Priority</dt><dd>{% include "partials/priority_badge.html" with ticket=ticket %}</dd></div>
+      <div class="facts__row"><dt>Assignee</dt><dd>{{ ticket.assignee_name }}</dd></div>
+      <div class="facts__row"><dt>Replies</dt><dd>{{ message_count }}</dd></div>
+    </dl>
+
+    <p class="notice notice--danger">The requester loses access to this thread immediately. If the request is resolved, close it instead so the history stays searchable.</p>
+
+    <div class="form-actions">
+      <form method="post" action="{% url 'ticket_delete' ticket.pk %}">
+        {% csrf_token %}
+        <button class="btn btn-destructive" type="submit">Delete ticket permanently</button>
+      </form>
+      <a class="btn btn-quiet" href="{% url 'ticket_detail' ticket.pk %}">Cancel</a>
+    </div>
+  </section>
+
+  <aside class="span-4 stack">
+    <section class="panel" aria-labelledby="instead-title">
+      <header class="panel__head">
+        <h2 id="instead-title">Rather keep it?</h2>
+      </header>
+      <p class="body-copy">Set the ticket to <strong>Closed</strong> from the triage panel and it leaves the working queue without losing the conversation.</p>
+      <a class="btn btn-secondary" href="{% url 'ticket_detail' ticket.pk %}">Back to the ticket</a>
+    </section>
+  </aside>
+</div>
+{% endblock %}
