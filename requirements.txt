@@ -1,0 +1,5 @@
+Django==5.2.17
+# Test tooling: the suite is plain Django TestCase, runnable with either
+# `python manage.py test` or `pytest` (see pytest.ini).
+pytest==8.4.2
+pytest-django==4.9.0
